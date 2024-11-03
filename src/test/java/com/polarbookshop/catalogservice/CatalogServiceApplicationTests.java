@@ -2,6 +2,7 @@ package com.polarbookshop.catalogservice;
 
 import com.polarbookshop.catalogservice.domain.Book;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -10,11 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CatalogServiceApplicationTests {
 
-    private final WebTestClient webTestClient;
-
-    CatalogServiceApplicationTests(WebTestClient webTestClient) {
-        this.webTestClient = webTestClient;
-    }
+    @Autowired
+    private WebTestClient webTestClient;
 
     @Test
     void whenPostRequestThenBookCreated() {
@@ -27,7 +25,7 @@ class CatalogServiceApplicationTests {
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(Book.class).value(actualBook -> {
-                    assertThat(actualBook).isNull();
+                    assertThat(actualBook).isNotNull();
                     assertThat(actualBook.isbn()).isEqualTo(expectedBook.isbn());
                 });
 
