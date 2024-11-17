@@ -26,8 +26,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: refresh
-
+        include: "*"
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
