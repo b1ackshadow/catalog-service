@@ -9,3 +9,28 @@ server:
 spring:
   application:
     name: catalog-service
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      uri: "http://localhost:8888"
+      request-connect-timeout:  5000
+      request-read-timeout: 5000
+      fail-fast: false # local dev
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        max-interval: 2000
+        multiplier: 1.1
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+polar:
+  greeting: "Welcome to book catalog service local config"
