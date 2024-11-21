@@ -22,7 +22,7 @@ import com.polarbookshop.catalogservice.domain.BookRepository;
 @DataJdbcTest
 @Import(DataConfig.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ActiveProfiles(value = { "testdata", "integration" })
+@ActiveProfiles(value = { "integration" })
 public class BookRepositoryJdbcTests {
 
     @Autowired
