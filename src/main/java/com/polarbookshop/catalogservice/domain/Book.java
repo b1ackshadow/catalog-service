@@ -14,10 +14,8 @@ public record Book(
 
         @Id Long id,
 
-        @NotBlank(message = "The Book ISBN must be defined.") @Pattern(regexp = "^([0-9]{10}|[0-9]{13})$", // all nums
-                                                                                                           // of len 10
-                                                                                                           // or len 13
-                message = "The ISBN format must be valid.") @Schema(description = "ISBN formatted string") String isbn,
+        // nums only of len 10/13 only
+        @NotBlank(message = "The Book ISBN must be defined.") @Pattern(regexp = "^([0-9]{10}|[0-9]{13})$", message = "The ISBN format must be valid.") @Schema(description = "ISBN formatted string") String isbn,
 
         @NotBlank(message = "The Book title must be defined.") String title,
 

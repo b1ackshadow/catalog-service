@@ -9,7 +9,7 @@ public class PolarProperties {
      */
     private String greeting;
 
-    public String getGreeting(){
+    public String getGreeting() {
         return this.greeting;
     }
 
