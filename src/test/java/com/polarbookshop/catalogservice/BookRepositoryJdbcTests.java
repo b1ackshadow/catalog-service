@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.polarbookshop.catalogservice.config.DataConfig;
 import com.polarbookshop.catalogservice.domain.Book;
@@ -32,6 +33,7 @@ public class BookRepositoryJdbcTests {
     private JdbcAggregateTemplate jdbcAggregateTemplate;
 
     @Test
+    @Transactional
     public void findBookByIsbnWhenExisting() {
         var isbn = "1231231231";
 

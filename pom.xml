@@ -151,7 +151,7 @@
                         </env>
                     </image>
                     <!-- Testdata only for dev -->
-                    <profiles>testdata</profiles>
+                    <!--<profiles>testdata</profiles>-->
 <!--                    <profiles>prod</profiles>-->
                 </configuration>
             </plugin>
