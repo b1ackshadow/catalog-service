@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url:  jdbc:tc:postgresql:17:///polardb_catalog
+  
+  # flyway:
+  #   enabled: true
+  

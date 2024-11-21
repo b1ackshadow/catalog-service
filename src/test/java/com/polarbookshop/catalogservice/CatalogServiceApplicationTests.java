@@ -13,7 +13,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("testdata")
+@ActiveProfiles(value = { "testdata", "integration" })
 class CatalogServiceApplicationTests {
 
     @Autowired
