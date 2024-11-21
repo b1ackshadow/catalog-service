@@ -33,6 +33,7 @@ public class BookService {
         return bookRepository.findByIsbn(isbn).map(existingBook -> {
             Book updatedBook = new Book(
                     existingBook.id(),
+                    existingBook.publisher(),
                     existingBook.isbn(),
                     book.title(),
                     book.author(),

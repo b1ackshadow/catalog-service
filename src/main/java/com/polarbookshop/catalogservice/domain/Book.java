@@ -14,6 +14,8 @@ public record Book(
 
         @Id Long id,
 
+        String publisher,
+
         // nums only of len 10/13 only
         @NotBlank(message = "The Book ISBN must be defined.") @Pattern(regexp = "^([0-9]{10}|[0-9]{13})$", message = "The ISBN format must be valid.") @Schema(description = "ISBN formatted string") String isbn,
 
@@ -28,8 +30,8 @@ public record Book(
         @LastModifiedDate Instant lastModifiedDate,
 
         @Version int version) {
-    public static Book of(String isbn, String title, String author, Double price) {
+    public static Book of(String isbn, String title, String author, Double price, String publisher) {
         return new Book(
-                null, isbn, title, author, price, null, null, 0);
+                null, null, isbn, title, author, price, null, null, 0);
     }
 }

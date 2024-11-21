@@ -1,7 +1,5 @@
-package com.polarbookshop.catalogservice;
+package com.polarbookshop.catalogservice.domain;
 
-
-import com.polarbookshop.catalogservice.domain.Book;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -24,7 +22,7 @@ public class BookValidationTests {
 
     @Test
     void whenAllFieldsCorrectThenValidationSucceeds() {
-        var book = Book.of("1231231230", "Some title", "Albert Camus", 200.0);
+        var book = Book.of("1231231230", "Some title", "Albert Camus", 200.0, null);
         Set<ConstraintViolation<Book>> violations = validator.validate(book);
         assertThat(violations).isEmpty();
     }
@@ -32,7 +30,7 @@ public class BookValidationTests {
     @Test
     void whenISBNDefinedButIncorrectThenValidationFails() {
         final String INVALID_ISBN_MSG = "The ISBN format must be valid.";
-        var book = Book.of("123", "Some title", "Albert Camus", 200.0);
+        var book = Book.of("123", "Some title", "Albert Camus", 200.0, null);
         Set<ConstraintViolation<Book>> violations = validator.validate(book);
         assertThat(violations).hasSize(1); // only isbn should trigger exception;
         assertThat(violations.iterator().next().getMessage()).isEqualTo(INVALID_ISBN_MSG);
