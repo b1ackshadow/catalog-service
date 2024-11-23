@@ -1,0 +1,66 @@
+#+TITLE: Polar catalgo service
+#+OPTIONS: num:t
+** Intro to Cloud Native
+** Cloud Native fundamentals
+** Getting started
+** Externalized config mgmt
+** Persisting and managing data in cloud
+** Containerization
+*** using Dockerfile
+*** Containerize a spring boot application
+We can use regular layered docker file but its cumbersome and not secure by default. Spring boot supports building from source code as show in the next section. See [[https://docs.spring.io/spring-boot/maven-plugin/build-image.html][Spring boot OCI packaging]]. It explains how to
+build image and publish to registry with auth.
+*** Docker compose 
+**** setup docker compose to configure catalog-service and polar-postgres
+
+  Spring boot supports packetobuilds by automatically building layers of containers and packaging an IMAGE using source code. Currently we are using properties file to encode auth info for the database
+  but we are passing datasoure URL, testdata profile and BPM JVM thread in ENV.
+**** Debug containers
+We can expose port from inside the container by configuring BPL params ~BPL_DEBUG_ENABLED~ and ~BPL_DEBUG_PORT~ as env variables in compose. Also expose the port from the container 
+
+#+begin_src yaml
+    - BPL_DEBUG_ENABLED=true
+    - BPL_DEBUG_PORT=8001 # this only enables from app
+#+end_src
+
+Currently we can only debug using intellij remote debugger but it does work in connecting to WSL docker port from windows install.
+
+*** Package and Publish
+So far we have identified three stages, 
+- commit
+- acceptance 
+- production 
+  
+**** Continuing with commit stage
+This stage does following things when a code is committed,
+
+- build
+- UT and IT
+- static code analysis
+- package
+
+ At the end of this stage, we will have a release ready artifact in artifact repo for deployment.
+ 
+
+After we finish above stages, we need to build and scan the image itself. If it passes all of that then we becomes ready for release. We can also use [[http://www.sigstore.dev/][sigstore.dev]] to sign our image so that we can ensure our
+consumers are downloading legitimage image. Just a good thing to know and do.
+
+**** Adding image stage to our commit stage workflow
+
+- We can setup =REGISTRY=, =IMAGE_NAME=, =VERSION= as env. This is because we can always change these details later so that artifact can directly pick up this information. Make sure to put the env section before
+  job section is defined.
+
+#+BEGIN_QUOTE
+Add the changes to ./.github/workflows/
+#+END_QUOTE
+
+#+begin_src yaml
+env:
+    REGISTRY: ghcr.io 
+    IMAGE_NAME: <your_github_username>/catalog-service 
+    VERSION: latest 
+#+end_src
+
+- Next setup a job for package and publish. Here we first package once the build goes through successfully and then scan the image before publishing. Refer the =package= job section in workflow config.
+  This will be a separate job after =build=.
+
