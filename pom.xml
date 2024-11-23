@@ -154,8 +154,8 @@
                         </env>
                     </image>
                     <docker>
+                        <!--    pass properties from command line while building image-->
                         <!--<publishRegistry>-->
-                        <!--    <!--pass properties from command line while building image-->-->
                         <!--    <url>ghcr.io</url>-->
                         <!--    <username>${docker.publishRegistry.username}</username>-->
                         <!--    <password>${docker.publishRegistry.token}</password>-->
