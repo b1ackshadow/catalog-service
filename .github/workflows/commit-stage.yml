@@ -39,7 +39,7 @@ jobs:
           ./mvnw install
   package: 
     name: Package and publish
-    if: ${{ github.ref == 'refs/head/main'}}
+    if: ${{ github.ref == 'refs/head/master'}}
     needs: [ build ]
     runs-on: ubuntu-24.04
     permissions:
