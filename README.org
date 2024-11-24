@@ -64,3 +64,28 @@ env:
 - Next setup a job for package and publish. Here we first package once the build goes through successfully and then scan the image before publishing. Refer the =package= job section in workflow config.
   This will be a separate job after =build=.
 
+*** Containerize config server
+
+
+- Setup GIT URI =CATALOG_SERVICE_CONFIG_URI= as env in application properties.  Build the image and docker compose will provide env variable.
+
+  Example:
+	# uri: https://b1ackshadow:${CATALOG_CONFIG_TOKEN}@github.com/b1ackshadow/catalog-service-config.git
+
+- Once the image is built, update docker compose to create config service
+
+#+begin_src sh
+  ./mvnw -e spring-boot:build-image -DskipTests \
+	 -Dspring-boot.build-image.imageName=ghcr.io/b1ackshadow/catalog-service-config-server
+#+end_src
+
+- Test docker compose services. We need to pass CONFIG URI as well as TOKEN for local. Once we setup deployment pipeline we can use GIT SECRETS
+
+#+begin_src sh
+  export CATALOG_CONFIG_TOKEN=<TOKEN>
+  export CATALOG_SERVICE_CONFIG_URI=https://b1ackshadow:${CATALOG_CONFIG_TOKEN}@github.com/b1ackshadow/catalog-service-config.git
+#+end_src
+
+- To enable healthcheck to ensure the catalog-service starts after catalog-service-config-server, we need to build the config service with full base image. So that it includes curl which we need for healthcheck.
+
+ 

@@ -145,6 +145,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <image>
+                        <pullPolicy>IF_NOT_PRESENT</pullPolicy>
                         <!--will be injected from ENV in CICD as maven args-->
                         <!--<name>ghcr.io/b1ackshadow/${project.artifactId}</name>-->
                         <!--<publish>true</publish>-->

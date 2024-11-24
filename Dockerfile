@@ -1,19 +1,30 @@
-#FROM maven:3.9.9-amazoncorretto-17-alpine AS MAVEN_BUILD
-#
-#COPY pom.xml /build/
-#COPY src /build/src/
-#WORKDIR /build/
-#
-#RUN mvn clean package
-#=====================================================================================
-FROM amazoncorretto:21-alpine
+FROM amazoncorretto:21-alpine AS builder
 
 LABEL authors="blackshadow"
 
 WORKDIR /app
 
-#COPY --from=MAVEN_BUILD /build/target/catalog-service.jar /app/
-COPY target/catalog-service.jar /app
+ARG JAR_FILE=target/catalog-service.jar 
 
-ENTRYPOINT ["java","-jar","catalog-service.jar"]
+COPY ${JAR_FILE} catalog-service.jar
+
+RUN java -Djarmode=layertools -jar catalog-service.jar extract 
+
+#====================================================================================================
+
+FROM amazoncorretto:21-alpine
+
+WORKDIR /app
+
+RUN addgroup -S springgroup && adduser -S springuser -G springgroup
+
+USER springuser
+
+COPY --from=builder app/dependencies/ ./
+COPY --from=builder app/spring-boot-loader/ ./
+COPY --from=builder app/snapshot-dependencies/ ./
+COPY --from=builder app/application/ ./
+
+ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+
 

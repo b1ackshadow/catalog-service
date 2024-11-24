@@ -13,7 +13,8 @@ spring:
     import: "optional:configserver:"
   cloud:
     config:
-      uri: "http://localhost:8888"
+      # uri: "http://localhost:8888"
+      uri: ${SPRING_CLOUD_CONFIG_URI}
       request-connect-timeout:  5000
       request-read-timeout: 5000
       fail-fast: false # local dev
