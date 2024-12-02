@@ -1,21 +1,22 @@
-#+TITLE: Polar catalgo service
+#+TITLE: Polar catalog service
 #+OPTIONS: num:t
-** Intro to Cloud Native
-** Cloud Native fundamentals
-** Getting started
-** Externalized config mgmt
-** Persisting and managing data in cloud
-** Containerization
-*** using Dockerfile
-*** Containerize a spring boot application
+* Chapter 6 Containerziation
+*** Intro to Cloud Native
+*** Cloud Native fundamentals
+*** Getting started
+*** Externalized config mgmt
+*** Persisting and managing data in cloud
+*** Containerization
+**** using Dockerfile
+**** Containerize a spring boot application
 We can use regular layered docker file but its cumbersome and not secure by default. Spring boot supports building from source code as show in the next section. See [[https://docs.spring.io/spring-boot/maven-plugin/build-image.html][Spring boot OCI packaging]]. It explains how to
 build image and publish to registry with auth.
-*** Docker compose 
-**** setup docker compose to configure catalog-service and polar-postgres
+**** Docker compose
+***** setup docker compose to configure catalog-service and polar-postgres
 
-  Spring boot supports packetobuilds by automatically building layers of containers and packaging an IMAGE using source code. Currently we are using properties file to encode auth info for the database
-  but we are passing datasoure URL, testdata profile and BPM JVM thread in ENV.
-**** Debug containers
+Spring boot supports packetobuilds by automatically building layers of containers and packaging an IMAGE using source code. Currently we are using properties file to encode auth info for the database
+but we are passing datasoure URL, testdata profile and BPM JVM thread in ENV.
+***** Debug containers
 We can expose port from inside the container by configuring BPL params ~BPL_DEBUG_ENABLED~ and ~BPL_DEBUG_PORT~ as env variables in compose. Also expose the port from the container 
 
 #+begin_src yaml
@@ -25,13 +26,13 @@ We can expose port from inside the container by configuring BPL params ~BPL_DEBU
 
 Currently we can only debug using intellij remote debugger but it does work in connecting to WSL docker port from windows install.
 
-*** Package and Publish
+**** Package and Publish
 So far we have identified three stages, 
 - commit
 - acceptance 
 - production 
   
-**** Continuing with commit stage
+***** Continuing with commit stage
 This stage does following things when a code is committed,
 
 - build
@@ -39,13 +40,13 @@ This stage does following things when a code is committed,
 - static code analysis
 - package
 
- At the end of this stage, we will have a release ready artifact in artifact repo for deployment.
+  At the end of this stage, we will have a release ready artifact in artifact repo for deployment.
  
 
 After we finish above stages, we need to build and scan the image itself. If it passes all of that then we becomes ready for release. We can also use [[http://www.sigstore.dev/][sigstore.dev]] to sign our image so that we can ensure our
 consumers are downloading legitimage image. Just a good thing to know and do.
 
-**** Adding image stage to our commit stage workflow
+***** Adding image stage to our commit stage workflow
 
 - We can setup =REGISTRY=, =IMAGE_NAME=, =VERSION= as env. This is because we can always change these details later so that artifact can directly pick up this information. Make sure to put the env section before
   job section is defined.
@@ -64,28 +65,248 @@ env:
 - Next setup a job for package and publish. Here we first package once the build goes through successfully and then scan the image before publishing. Refer the =package= job section in workflow config.
   This will be a separate job after =build=.
 
-*** Containerize config server
+**** Containerize config server
 
 
 - Setup GIT URI =CATALOG_SERVICE_CONFIG_URI= as env in application properties.  Build the image and docker compose will provide env variable.
 
   Example:
-	# uri: https://b1ackshadow:${CATALOG_CONFIG_TOKEN}@github.com/b1ackshadow/catalog-service-config.git
+  # uri: https://b1ackshadow:${CATALOG_CONFIG_TOKEN}@github.com/b1ackshadow/catalog-service-config.git
 
 - Once the image is built, update docker compose to create config service
 
 #+begin_src sh
-  ./mvnw -e spring-boot:build-image -DskipTests \
-	 -Dspring-boot.build-image.imageName=ghcr.io/b1ackshadow/catalog-service-config-server
+./mvnw -e spring-boot:build-image -DskipTests \
+	-Dspring-boot.build-image.imageName=ghcr.io/b1ackshadow/catalog-service-config-server
 #+end_src
 
 - Test docker compose services. We need to pass CONFIG URI as well as TOKEN for local. Once we setup deployment pipeline we can use GIT SECRETS
 
 #+begin_src sh
-  export CATALOG_CONFIG_TOKEN=<TOKEN>
-  export CATALOG_SERVICE_CONFIG_URI=https://b1ackshadow:${CATALOG_CONFIG_TOKEN}@github.com/b1ackshadow/catalog-service-config.git
+export CATALOG_CONFIG_TOKEN=<TOKEN>
+export CATALOG_SERVICE_CONFIG_URI=https://b1ackshadow:${CATALOG_CONFIG_TOKEN}@github.com/b1ackshadow/catalog-service-config.git
 #+end_src
 
 - To enable healthcheck to ensure the catalog-service starts after catalog-service-config-server, we need to build the config service with full base image. So that it includes curl which we need for healthcheck.
 
- 
+* Chapter 7 Kubernetes
+** Moving from Docker to Kubernetes
+Docker compose wires up all services but its still limited to one host machine managed by
+docker daemon. This is not scalable or reselient.
+
+Kubernetes managed by K8s control plane will use a cluster of nodes where a lot pods(pod contains lot of containers) and scales across all the machines. (Ex: EC2 nodes).
+
+K8s cluster ->  Control plane -> Worker node(s) -> Pod(s) -> containers
+
+*** Local K8s cluster using minikube
+
+- Stop the default minikube cluster
+#+begin_src sh
+minikube stop
+#+end_src
+
+#+RESULTS:
+| ✋ | Stopping | node | polar    | ... |
+| 🛑 |        1 | node | stopped. |     |
+
+- We can create a separate profile for Polar on top of docker.
+
+#+begin_src sh
+minikube start --cpus 2 --memory 4g --driver docker --profile polar
+#+end_src
+
+- Get nodes
+  #+begin_src sh
+kubectl get nodes
+  #+end_src
+
+  #+RESULTS:
+  | NAME  | STATUS | ROLES         | AGE | VERSION |
+  | polar | Ready  | control-plane | 34m | v1.31.0 |
+
+- Ensure current context is polar
+  #+begin_src sh
+#kubectl config get-contexts
+kubectl config current-context
+  #+end_src
+
+  #+RESULTS:
+  : polar
+
+- To change context
+  #+begin_src sh
+kubectl config use-context polar
+  #+end_src
+
+  #+RESULTS:
+  : Switched to context "polar".
+
+- Start, stop and delete cluster
+  #+begin_src sh
+#minikube stop --profile polar
+#minikube start --profile polar
+#minikube delete --profile polar
+  #+end_src
+
+*** Data services in local cluster
+
+We have setup a postgres deployment config in =polar-deployment=. Apply the deployment.
+#+begin_src sh
+kubectl apply -f services
+#kubectl delete -f services
+#+end_src
+** Deploying Spring Boot applications on Kubernetes
+*** Containers to Pods
+Pods are essentially similar to containers expected they generally run one app container,
+and helper functions like logger, metrics, encryption services etc. But unlike with docker,
+we use high level abstractions to work with pods using Deployments.
+
+Deployment is an object that manages the life cycle of Pods and replicas. Replication
+happens across the nodes. The whole point of using k8s is to scale our services
+effortlessly.
+
+What it does
+- Deploy apps
+- rollout upgrades without downtime
+- rollout previous version in case of errors
+- Pause or resume upgrades
+- =ReplicaSet= object to maintain a desired number of replicas - fault tolerance.
+
+A manifest file which is a declarative way to deploy has 4 main sections,
+
+- =apiVersion= - specifies the versioned schema for objects
+- =kind= - type of objects Ex: Pods, Deployment or Service
+- =metadata= - details about object like =name= and kv pairs =labels= Ex we can tell k8s
+  to replicate pods with a certain label
+- =spec= Describes the spec for a particular object
+#+begin_src sh :results none
+kubectl api-resources
+#+end_src
+
+Create =catalog-service= manifest at ~catalog-service/k8s/deployment.yml~.
+
+#+NAME: k8s/deployment.yml
+#+begin_src yaml :cache yes :tangle k8s/deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+  labels:
+    app: catalog-service
+spec:
+  selector:
+    matchLabels:
+      app: catalog-service
+
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+    spec:
+      containers:
+        - name: catalog-service
+          image: catalog-service
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9001
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://polar-postgres/polardb_catalog
+            - name: SPRING_PROFILES_ACTIVE
+              value: testdata
+#+end_src
+
+At this point, we have a local k8s deployment for postgres running and another deployment for catalog-service running inside the minikube cluster. They are able to communicate with each other.
+We need to expose the container to outside world to be able to access it.
+** Understanding service discovery and load balancing
+*** Server-side Service discovery
+K8s provides Service objects. A service exposes the services running in Pods as a network service. The most common and default way to achieve this is to use =ClusterIP=.
+There are 4 attributes requried for a =ClusterIP= :-
+
+- =selector= label used to match all the pods that is to be exposed
+- =protocol=
+- =port= used by the service to listen
+- =targetPort= is the pods ports to forward all the requests
+
+*** Create a service manifest
+#+begin_src yaml :cache yes :tangle k8s/service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+  labels:
+    app: catalog-service
+spec:
+  type: ClusterIP
+  selector:
+      app: catalog-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9001
+#+end_src
+
+Create the service
+#+begin_src sh
+kubectl apply -f k8s/service.yml
+#+end_src
+
+We can use k8s portforwarding to test the service.
+#+begin_src sh
+kubectl port-forward service/catalog-service 9001:80
+#+end_src
+
+** Building scalable and disposable applications
+When talking about scalibility and disposability, we need two things.
+- Scalable means we need our applications to have fast startup time and low resource requirements
+- Disposable means we need our applications to have graceful shutdown.
+
+  Spring supports graceful mode, we can enable it and change the default graceful period(how long it should continue to process after shutdown signal)
+   - ~server.shutdown~
+   - ~spring.lifecycle.timeoutper-shutdown-phase~
+
+Our application has graceful shutdown period of 15s which is smaller than k8s default period of 30s.
+- K8s sends =SIGTERM= signal and waits for the graceful period.
+-  If the Pod is not terminated in that time it then sends the =SIGKILL= signal.
+
+During this phase, there is a window where our application is shutting down gracefully but the K8s is yet to convey its components about the =SIGTERM= signal. It could mean that client might get
+errors unnecessarily. We can make this transparent by delaying =SIGTERM= to the Pod so that K8s has enough time to stop forwarding requests before Pod starts shutting down.
+
+=preStop= Hook allows us to configure =SIGTERM= delay by basically using sh to exec a =sleep= command.
+
+Now our application and K8s is configured to transparently handle graceful shutdown call. Our application will take 15s and K8s will have 15s delay before =SIGTERM= is sent to the application by then all the K8s components will know about stopping forwarding requests to application.
+
+*** Scaling Spring boot
+Scaling is handled at the Pod level based on deployment config. ReplicaSet Object handles all this part. We have already configured replicas we just need to modify according to our needs.
+** Establishing a local Kubernetes development workflow
+So far we know how to setup Pods, Deployment, Service, ReplicaSets. But we been doing manually. Ex, when we make a change to image we need to rebuild and redploy the service.
+
+Our goals are:
+
+- Package spring boot container image.
+- upload the image to K8s cluster(minikube)
+- Apply the kubernetes manifests
+- Enable port forwarding on the application service port
+- Access to logs from the applications inside containers
+
+Install Titl and create the =Tiltfile= in project root dir. Configuration will have 3 components on how to - build image, deploy the container and access the application.
+
+#+begin_src yaml :cache yes :tangle Tiltfile
+# Build
+custom_build(
+ # Name of the container image
+ ref = 'catalog-service',
+ # Command to build the container image
+ command = './mvnw spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=$EXPECTED_REF',
+ # Files to watch that trigger a new build
+ deps = ['pom.xml', 'src']
+)
+# Deploy
+k8s_yaml(['k8s/deployment.yml', 'k8s/service.yml'])
+# Manage
+k8s_resource('catalog-service', port_forwards=['9001'])
+#+end_src
+
+** Validating Kubernetes manifests with GitHub Actions

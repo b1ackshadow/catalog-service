@@ -37,6 +37,14 @@ jobs:
         run: |
           chmod +x mvnw
           ./mvnw install
+      - name: Validate Kubernetes manifests
+      - uses: alexellis/arkade-get@master
+        with:
+          kubectl: latest
+          kubeconform: latest
+      - name: validate the manifests
+        run: |
+          kubeconform -strict -summary k8s/
   package: 
     name: Package and publish
     if: ${{ github.ref == 'refs/heads/master'}}
@@ -59,7 +67,7 @@ jobs:
       - name: Build container image
         run: |
             chmod +x mvnw
-            ./mvnw -e spring-boot:build-image \
+            ./mvnw -e spring-boot:build-image -DskipTests \
             -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} \
       - name: OCI image vulnerability scanning
         uses: anchore/scan-action@v3
