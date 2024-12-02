@@ -38,7 +38,7 @@ jobs:
           chmod +x mvnw
           ./mvnw install
       - name: Validate Kubernetes manifests
-      - uses: alexellis/arkade-get@master
+        uses: alexellis/arkade-get@master
         with:
           kubectl: latest
           kubeconform: latest
